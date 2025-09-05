@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Tasks — Dark</title>
+  <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <style>
+    :root{--bg:#071022;--panel:#0d1724;--muted:#95a3b3;--text:#e7f0fb;--accent:#3b82f6;--glass:rgba(255,255,255,0.03);--success:#34d399;--danger:#fb7185}
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial;color:var(--text);background:linear-gradient(180deg,#041021,#071227);-webkit-font-smoothing:antialiased}
+    .app{max-width:1200px;margin:28px auto;display:grid;grid-template-columns:260px 1fr 360px;gap:18px;padding:18px}
+    @media (max-width:1000px){.app{grid-template-columns:1fr;padding:12px}.right-col{display:none}}
+    .sidebar{background:var(--panel);border-radius:12px;padding:12px;box-shadow:0 8px 30px rgba(2,6,23,0.6);height:fit-content}
+    .brand{font-weight:700;font-size:18px;margin-bottom:10px;color:var(--text);display:flex;align-items:center;gap:8px}
+    .lists{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+    .list-item{display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:10px;color:var(--muted);cursor:pointer;transition:all .18s ease}
+    .list-item:hover{background:var(--glass);color:var(--text);transform:translateY(-2px)}
+    .list-item.active{background:linear-gradient(90deg,var(--accent),#60a5fa);color:white;box-shadow:0 6px 18px rgba(37,99,235,0.12)}
+    .create-list{display:flex;gap:8px;margin-top:10px}
+    .btn{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:8px 10px;border-radius:8px;color:var(--muted);cursor:pointer}
+    .main{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border-radius:12px;padding:16px;box-shadow:0 8px 30px rgba(2,6,23,0.5)}
+    .topbar{display:flex;gap:12px;align-items:center;justify-content:space-between}
+    .title{font-size:20px;font-weight:700;color:var(--text)}
+    .controls{display:flex;gap:8px;align-items:center}
+    .search{background:var(--panel);padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);color:var(--muted);outline:none;min-width:200px}
+    .add-row{display:flex;gap:8px;margin-top:12px;align-items:center}
+    .add-input{flex:1;background:#071227;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);color:var(--text);outline:none;transition:box-shadow .18s}
+    .add-input:focus{box-shadow:0 6px 20px rgba(59,130,246,0.12)}
+    .primary{background:linear-gradient(90deg,var(--accent),#3b82f6);color:#fff;border:none;padding:10px 12px;border-radius:10px;cursor:pointer}
+    .task-list{margin-top:14px;display:flex;flex-direction:column;gap:10px;min-height:150px}
+    .task-card{display:flex;gap:12px;align-items:center;padding:12px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.00));border:1px solid rgba(255,255,255,0.03);transition:transform .12s ease,box-shadow .12s ease}
+    .task-card:hover{transform:translateY(-6px);box-shadow:0 12px 34px rgba(2,6,23,0.6)}
+    .task-main{flex:1;display:flex;gap:8px;flex-direction:column}
+    .task-title{font-weight:600;color:var(--text);display:flex;gap:8px;align-items:center}
+    .task-meta{color:var(--muted);font-size:13px;display:flex;gap:8px;align-items:center}
+    .chip{padding:6px 8px;border-radius:999px;font-size:12px;color:#000}
+    .chip.high{background:#fecaca;color:#7f1d1d}
+    .chip.medium{background:#ffedd5;color:#7c2d12}
+    .chip.low{background:#bbf7d0;color:#064e3b}
+    .task-actions{display:flex;gap:8px;align-items:center}
+    .icon-btn{background:transparent;border:none;color:var(--muted);padding:8px;border-radius:8px;cursor:pointer;transition:all .12s}
+    .icon-btn:hover{background:var(--glass);color:var(--text);transform:translateY(-2px)}
+    .small-muted{font-size:13px;color:var(--muted)}
+    .right-col{background:var(--panel);border-radius:12px;padding:12px;height:fit-content;box-shadow:0 8px 30px rgba(2,6,23,0.6)}
+    .section{margin-bottom:12px}
+    .section h3{margin:0 0 8px 0;font-size:14px;color:var(--text)}
+    .muted{color:var(--muted)}
+    input[type=date],select,input[type=time]{background:transparent;color:var(--text);border:1px solid rgba(255,255,255,0.03);padding:8px 10px;border-radius:8px}
+    .empty{padding:28px;text-align:center;color:var(--muted);border-radius:8px;border:1px dashed rgba(255,255,255,0.03)}
+    .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,0.6);display:flex;align-items:center;justify-content:center;z-index:60;opacity:0;pointer-events:none;transition:opacity .18s}
+    .modal-backdrop.open{opacity:1;pointer-events:auto}
+    .modal{background:var(--panel);padding:18px;border-radius:12px;min-width:320px;max-width:680px;box-shadow:0 18px 60px rgba(2,6,23,0.8);transform:translateY(12px);opacity:0;transition:all .18s}
+    .modal-backdrop.open .modal{transform:none;opacity:1}
+    .modal .row{display:flex;gap:8px;margin-bottom:10px}
+    .modal input[type=text],.modal textarea{flex:1;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:var(--text);outline:none}
+    .fade-in{animation:fadeIn .28s ease both}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <aside class="sidebar">
+      <div class="brand">Tasks</div>
+      <div class="lists" id="lists"></div>
+      <div class="create-list">
+        <input id="newListName" placeholder="New list..." style="flex:1;padding:8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.03);color:var(--text);outline:none" />
+        <button class="btn" id="createListBtn">Add</button>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+        <button class="btn" id="importBtn">Import</button>
+        <button class="btn" id="exportBtn">Export</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div>
+          <div class="title" id="currentListTitle">All Tasks</div>
+          <div class="small-muted" id="subtitle">Everything in one place</div>
+        </div>
+        <div class="controls">
+          <input id="search" class="search" placeholder="Search tasks..." />
+          <select id="filterPriority" style="padding:8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.03);color:var(--text)">
+            <option value="all">All priorities</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+          <button class="btn" id="clearCompleted">Clear done</button>
+        </div>
+      </div>
+
+      <div class="add-row">
+        <input id="addInput" class="add-input" placeholder="Add a task..." />
+        <input type="date" id="addDate" />
+        <select id="addPriority" style="padding:8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.03);color:var(--text)">
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+          <option value="low">Low</option>
+        </select>
+        <button class="primary" id="addBtn">Add</button>
+      </div>
+
+      <div id="taskContainer" class="task-list" aria-live="polite"></div>
+    </main>
+
+    <aside class="right-col">
+      <div class="section">
+        <h3>Stats</h3>
+        <div id="stats" class="small-muted">Loading...</div>
+      </div>
+      <div class="section">
+        <h3>Quick actions</h3>
+        <div style="display:flex;gap:8px">
+          <button class="btn" id="toggleThemeBtn">Toggle Theme</button>
+          <button class="btn" id="notifyBtn">Enable notifications</button>
+        </div>
+      </div>
+      <div class="section">
+        <h3>Help</h3>
+        <div class="small-muted">Click title to toggle done. Double-click to edit. Drag to reorder lists.</div>
+      </div>
+    </aside>
+  </div>
+
+  <div id="modalBackdrop" class="modal-backdrop">
+    <div class="modal fade-in" role="dialog">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-weight:700">Edit Task</div>
+        <button id="closeModal" class="btn">Close</button>
+      </div>
+      <div class="row"><input id="modalTitle" type="text" placeholder="Title" /></div>
+      <div class="row"><textarea id="modalNotes" rows="4" placeholder="Notes" style="resize:none;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:var(--text)"></textarea></div>
+      <div class="row"><input id="modalDue" type="date" /><select id="modalPriority"><option value="medium">Medium</option><option value="high">High</option><option value="low">Low</option></select><select id="modalListSelect"></select></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" id="modalDelete">Delete</button><button class="primary" id="modalSave">Save</button></div>
+    </div>
+  </div>
+
+  <script>
+    const KEY='ms_todo_clone_v1'
+    const DEFAULT_LISTS=[{id:'myday',name:'My Day',system:true},{id:'important',name:'Important',system:true},{id:'planned',name:'Planned',system:true},{id:'all',name:'All Tasks',system:true}]
+    let state={lists:[],currentListId:'all'}
+    const listsEl=document.getElementById('lists')
+    const taskContainer=document.getElementById('taskContainer')
+    const currentListTitle=document.getElementById('currentListTitle')
+    const subtitle=document.getElementById('subtitle')
+    const addInput=document.getElementById('addInput')
+    const addBtn=document.getElementById('addBtn')
+    const addDate=document.getElementById('addDate')
+    const addPriority=document.getElementById('addPriority')
+    const searchInput=document.getElementById('search')
+    const filterPriority=document.getElementById('filterPriority')
+    const statsEl=document.getElementById('stats')
+    const createListBtn=document.getElementById('createListBtn')
+    const newListName=document.getElementById('newListName')
+    const clearCompletedBtn=document.getElementById('clearCompleted')
+    const exportBtn=document.getElementById('exportBtn')
+    const importBtn=document.getElementById('importBtn')
+    const notifyBtn=document.getElementById('notifyBtn')
+    const modalBackdrop=document.getElementById('modalBackdrop')
+    const modalTitle=document.getElementById('modalTitle')
+    const modalNotes=document.getElementById('modalNotes')
+    const modalDue=document.getElementById('modalDue')
+    const modalPriority=document.getElementById('modalPriority')
+    const modalListSelect=document.getElementById('modalListSelect')
+    const modalSave=document.getElementById('modalSave')
+    const modalDelete=document.getElementById('modalDelete')
+    const closeModal=document.getElementById('closeModal')
+    const uid=_=>Date.now().toString(36)+Math.random().toString(36).slice(2,8)
+    function save(){localStorage.setItem(KEY,JSON.stringify(state))}
+    function load(){try{const r=localStorage.getItem(KEY);if(r)state=JSON.parse(r)}catch(e){}if(!state.lists||!state.lists.length){state.lists=DEFAULT_LISTS.map(l=>({...l,tasks:[]})) ;state.lists.push({id:uid(),name:'Inbox',tasks:[{id:uid(),title:'Welcome — double-click to edit',createdAt:Date.now(),completed:false,priority:'medium',due:null,order:0}]});state.currentListId='all';save()}}
+    function getListById(id){return state.lists.find(l=>l.id===id)}
+    function getAllTasks(){return state.lists.flatMap(l=>l.tasks.map(t=>({...t,_listId:l.id}))) }
+    function renderLists(){listsEl.innerHTML='';['myday','important','planned','all'].forEach(id=>{const l=getListById(id);if(!l)return;listsEl.appendChild(createListElement(l))});state.lists.filter(l=>!l.system).forEach(l=>listsEl.appendChild(createListElement(l)))}
+    function createListElement(list){const div=document.createElement('div');div.className='list-item'+(state.currentListId===list.id?' active':'');div.dataset.id=list.id;const left=document.createElement('div');left.style.display='flex';left.style.gap='8px';left.style.alignItems='center';left.innerHTML=`<div style="width:8px;height:8px;background:transparent;border-radius:2px"></div><div>${escapeHtml(list.name)}</div>`;const right=document.createElement('div');right.style.display='flex';right.style.gap='6px';right.style.alignItems='center';const cnt=document.createElement('div');cnt.className='small-muted';cnt.textContent=allCountForList(list.id)>0?allCountForList(list.id):'';right.appendChild(cnt);div.appendChild(left);div.appendChild(right);div.addEventListener('click',()=>{state.currentListId=list.id;save();render()});return div}
+    function allCountForList(listId){if(listId==='all')return getAllTasks().length;if(listId==='important')return getAllTasks().filter(t=>t.priority==='high').length;if(listId==='planned')return getAllTasks().filter(t=>t.due).length;if(listId==='myday')return getAllTasks().filter(t=>t._myday).length;const l=getListById(listId);return l?l.tasks.length:0}
+    function renderTasks(){const listId=state.currentListId;currentListTitle.textContent=(getListById(listId)||{name:'All Tasks'}).name;subtitle.textContent=(listId==='all'?'All tasks across lists':(listId==='important'?'High priority tasks':(listId==='planned'?'Tasks with due dates':'Tasks in this list')));let tasks=[];if(listId==='all')tasks=getAllTasks();else if(listId==='important')tasks=getAllTasks().filter(t=>t.priority==='high');else if(listId==='planned')tasks=getAllTasks().filter(t=>t.due);else if(listId==='myday')tasks=getAllTasks().filter(t=>t._myday);else {const list=getListById(listId);tasks=list?list.tasks.map(t=>({...t,_listId:listId})):[]}const q=searchInput.value.trim().toLowerCase();const fpri=filterPriority.value;tasks=tasks.filter(t=>{if(fpri!=='all'&&t.priority!==fpri)return false;if(q&&!(t.title||'').toLowerCase().includes(q)&&!(t.notes||'').toLowerCase().includes(q))return false;return true});tasks.sort((a,b)=>(a.order||0)-(b.order||0)||(a.createdAt||0)-(b.createdAt||0));taskContainer.innerHTML='';if(!tasks.length){const empty=document.createElement('div');empty.className='empty';empty.textContent='No tasks — try adding one.';taskContainer.appendChild(empty)}else{tasks.forEach((t,idx)=>{taskContainer.appendChild(createTaskCard(t,idx))})}if(window.Sortable){if(taskContainer._sortable)taskContainer._sortable.destroy();taskContainer._sortable=new Sortable(taskContainer,{animation:150,onEnd:function(evt){if(['all','important','planned','myday'].includes(listId))return;const list=getListById(listId);if(!list)return;const visibleIds=Array.from(taskContainer.children).map(ch=>ch.dataset.tid);const reordered=visibleIds.map(id=>list.tasks.find(tt=>tt.id===id)).filter(Boolean);const invisible=list.tasks.filter(tt=>!visibleIds.includes(tt.id));list.tasks=reordered.concat(invisible);list.tasks.forEach((tt,i)=>tt.order=i);save();render()}})}updateStats()}
+    function createTaskCard(task){const li=document.createElement('div');li.className='task-card';li.dataset.tid=task.id;const cb=document.createElement('button');cb.className='icon-btn';cb.title='Toggle complete';cb.innerHTML=task.completed?'✔︎':'◻︎';cb.addEventListener('click',()=>{toggleComplete(task)});const main=document.createElement('div');main.className='task-main';const title=document.createElement('div');title.className='task-title';title.innerHTML=`<span ${task.completed? 'style="text-decoration: line-through; color:var(--muted)"':''}>${escapeHtml(task.title||'Untitled')}</span>`;const meta=document.createElement('div');meta.className='task-meta';if(task.due){const dueEl=document.createElement('div');dueEl.className='small-muted';dueEl.textContent=`Due: ${task.due}`;meta.appendChild(dueEl)}const priChip=document.createElement('div');priChip.className='chip '+(task.priority||'medium');priChip.textContent=(task.priority||'medium').toUpperCase();meta.appendChild(priChip);if(task._listId){const listName=getListById(task._listId)?.name;if(listName){const loc=document.createElement('div');loc.className='small-muted';loc.style.marginLeft='auto';loc.textContent=listName;meta.appendChild(loc)}}title.addEventListener('dblclick',()=>startEditTask(task));title.addEventListener('click',()=>toggleComplete(task));main.appendChild(title);if(task.notes){const notes=document.createElement('div');notes.className='small-muted';notes.textContent=task.notes;main.appendChild(notes)}main.appendChild(meta);const actions=document.createElement('div');actions.className='task-actions';const myDayBtn=document.createElement('button');myDayBtn.className='icon-btn';myDayBtn.title='Add to My Day';myDayBtn.innerHTML=task._myday?'☀︎':'○';myDayBtn.addEventListener('click',()=>{task._myday=!task._myday;save();renderTasks()});const editBtn=document.createElement('button');editBtn.className='icon-btn';editBtn.title='Edit';editBtn.innerHTML='✎';editBtn.addEventListener('click',()=>startEditTask(task));const delBtn=document.createElement('button');delBtn.className='icon-btn';delBtn.title='Delete';delBtn.innerHTML='🗑';delBtn.addEventListener('click',()=>{if(confirm('Delete task?'))deleteTask(task)});actions.appendChild(myDayBtn);actions.appendChild(editBtn);actions.appendChild(delBtn);li.appendChild(cb);li.appendChild(main);li.appendChild(actions);return li}
+    function addTaskToList(listId,title,due=null,priority='medium',notes=''){const list=getListById(listId);if(!list)return;const t={id:uid(),title,createdAt:Date.now(),completed:false,priority,due,notes,order:(list.tasks.length||0)};list.tasks.push(t);save();render()}
+    function addGlobalTask(title,due=null,priority='medium'){let targetId=state.currentListId;if(['all','important','planned','myday'].includes(targetId)){const inbox=state.lists.find(l=>!l.system)||state.lists[0];targetId=inbox.id}addTaskToList(targetId,title,due,priority)}
+    function toggleComplete(task){const list=getListById(task._listId)||state.lists.find(l=>l.tasks.some(tt=>tt.id===task.id));if(!list)return;const t=list.tasks.find(tt=>tt.id===task.id);if(!t)return;t.completed=!t.completed;save();renderTasks()}
+    function deleteTask(task){const list=getListById(task._listId)||state.lists.find(l=>l.tasks.some(tt=>tt.id===task.id));if(!list)return;list.tasks=list.tasks.filter(tt=>tt.id!==task.id);save();renderTasks()}
+    function startEditTask(task){openModal(task)}
+    createListBtn.addEventListener('click',()=>{const name=newListName.value.trim();if(!name)return;state.lists.push({id:uid(),name,tasks:[]});newListName.value='';save();render()})
+    addBtn.addEventListener('click',()=>{const txt=addInput.value.trim();if(!txt)return;addGlobalTask(txt,addDate.value||null,addPriority.value||'medium');addInput.value='';addDate.value='';addPriority.value='medium'})
+    addInput.addEventListener('keypress',e=>{if(e.key==='Enter')addBtn.click()})
+    ;[searchInput,filterPriority].forEach(el=>el.addEventListener('input',renderTasks))
+    clearCompletedBtn.addEventListener('click',()=>{const listId=state.currentListId;if(listId==='all'){state.lists.forEach(l=>{l.tasks=l.tasks.filter(t=>!t.completed)})}else{const list=getListById(listId);if(list)list.tasks=list.tasks.filter(t=>!t.completed)}save();render()})
+    exportBtn.addEventListener('click',()=>{const data=JSON.stringify(state,null,2);const blob=new Blob([data],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='tasks-export.json';a.click()})
+    importBtn.addEventListener('click',()=>{const input=document.createElement('input');input.type='file';input.accept='application/json';input.addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;const text=await file.text();try{const parsed=JSON.parse(text);if(parsed&&parsed.lists){state=parsed;save();render();alert('Imported')}else alert('Invalid file')}catch(err){alert('Import failed')}});input.click()})
+    notifyBtn.addEventListener('click',async()=>{if(!('Notification'in window))return alert('Notifications not supported');const p=await Notification.requestPermission();if(p==='granted')alert('Notifications enabled.');else alert('Notifications denied.')})
+    setInterval(()=>{if(Notification.permission!=='granted')return;getAllTasks().forEach(t=>{if(t.due&&!t.completed&&!t._notified){const dt=new Date(t.due+'T23:59:59');if(dt<=new Date()){try{new Notification('Task due: '+t.title,{body:t.due,tag:t.id})}catch(e){}const list=state.lists.find(l=>l.tasks.some(tt=>tt.id===t.id));if(list){const tt=list.tasks.find(x=>x.id===t.id);if(tt)tt._notified=true}save()}}})},15000)
+    function updateStats(){const total=getAllTasks().length;const done=getAllTasks().filter(t=>t.completed).length;const overdue=getAllTasks().filter(t=>t.due&&new Date(t.due+'T23:59:59')<new Date()&&!t.completed).length;statsEl.textContent=`Total: ${total} · Done: ${done} · Overdue: ${overdue}`}
+    function escapeHtml(s){return String(s).replace(/[&<>"]/,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]||m))}
+    function render(){renderLists();renderTasks();renderModalListOptions()}
+    function renderModalListOptions(){modalListSelect.innerHTML='';state.lists.forEach(l=>{const opt=document.createElement('option');opt.value=l.id;opt.textContent=l.name;modalListSelect.appendChild(opt)})}
+    function openModal(task){modalBackdrop.classList.add('open');modalTitle.value=task.title||'';modalNotes.value=task.notes||'';modalDue.value=task.due||'';modalPriority.value=task.priority||'medium';modalListSelect.value=task._listId||state.lists.find(l=>l.tasks.some(tt=>tt.id===task.id))?.id||state.lists[0].id;modalSave.onclick=()=>{const listId=modalListSelect.value;const list=getListById(listId);if(!list)return;const t=list.tasks.find(tt=>tt.id===task.id)||state.lists.find(l=>l.tasks.some(tt=>tt.id===task.id)).tasks.find(tt=>tt.id===task.id);if(!t)return;t.title=modalTitle.value.trim()||t.title;t.notes=modalNotes.value.trim()||'';t.due=modalDue.value||null;t.priority=modalPriority.value;const currentList=getListById(task._listId)||state.lists.find(l=>l.tasks.some(tt=>tt.id===task.id));if(currentList&&currentList.id!==listId){currentList.tasks=currentList.tasks.filter(tt=>tt.id!==task.id);list.tasks.push(t)}save();closeModalAction();render()};modalDelete.onclick=()=>{if(!confirm('Delete task?'))return;deleteTask(task);closeModalAction()};closeModal.onclick=closeModalAction;modalBackdrop.addEventListener('click',e=>{if(e.target===modalBackdrop)closeModalAction()})}
+    function closeModalAction(){modalBackdrop.classList.remove('open')}
+    load();render();document.querySelectorAll('.btn').forEach(b=>b.setAttribute('tabindex','0'))
+    window._mstodo={state,save,load,render}
+  </script>
+</body>
+</html>
